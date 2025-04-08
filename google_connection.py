@@ -15,32 +15,40 @@ def connect_to_gsheets():
         client: Cliente autorizado de gspread o None si hay error
     """
     try:
-        # Intentar primero con las credenciales de Streamlit secrets (para despliegue en la nube)
-        if "gcp_credentials" in st.secrets:
-            credentials_dict = st.secrets["gcp_credentials"]
-            scopes = ['https://spreadsheets.google.com/feeds',
-                     'https://www.googleapis.com/auth/drive']
-            
-            creds = Credentials.from_service_account_info(credentials_dict, scopes=scopes)
-            client = gspread.authorize(creds)
-            return client
+        # Opción 1: Usar secrets.toml (para despliegue en la nube)
+        if hasattr(st, "secrets") and "gcp_credentials" in st.secrets:
+            try:
+                credentials_dict = st.secrets["gcp_credentials"]
+                scopes = ['https://spreadsheets.google.com/feeds',
+                         'https://www.googleapis.com/auth/drive']
+                
+                creds = Credentials.from_service_account_info(credentials_dict, scopes=scopes)
+                client = gspread.authorize(creds)
+                st.success("Conectado a Google Sheets usando secrets.toml")
+                return client
+            except Exception as e:
+                st.warning(f"Error usando secrets.toml: {e}")
+                # Continuar con la siguiente opción
         
-        # Si no hay secrets, usar el archivo local (para desarrollo)
-        else:
-            # Ruta al archivo de credenciales local
-            credentials_path = "credentials.json"
-            
-            # Verificar si el archivo existe
-            if os.path.exists(credentials_path):
+        # Opción 2: Usar el archivo credentials.json
+        credentials_path = "credentials.json"
+        if os.path.exists(credentials_path):
+            try:
                 scopes = ['https://spreadsheets.google.com/feeds',
                          'https://www.googleapis.com/auth/drive']
                 
                 creds = Credentials.from_service_account_file(credentials_path, scopes=scopes)
                 client = gspread.authorize(creds)
+                st.success("Conectado a Google Sheets usando credentials.json")
                 return client
-            else:
-                st.error("No se encontró el archivo de credenciales. Por favor, crea un archivo 'credentials.json' con las credenciales del servicio.")
-                return None
+            except Exception as e:
+                st.warning(f"Error con credentials.json: {e}")
+                # Continuar con la siguiente opción
+        
+        # Si llegamos aquí, ninguna de las opciones funcionó
+        st.error("No se pudo establecer conexión con Google Sheets. Verifica tus credenciales.")
+        return None
+        
     except Exception as e:
         st.error(f"Error al conectar con Google Sheets: {e}")
         return None
