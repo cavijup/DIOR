@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Streamlit
+.streamlit/
+
+# Secrets
+*.env
+secrets.toml
+
+# IDE
+.idea/
+.vscode/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+credentials.json
