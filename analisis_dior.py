@@ -565,7 +565,7 @@ def ejecutar_analisis_completo(df_datos, n_clusters=3):
     
     return resultados
 
-# Función para generar visualizaciones con Plotly
+# Función para generar visualizaciones con Plotly (modificada)
 def generar_visualizaciones(resultados):
     """
     Genera visualizaciones interactivas a partir de los resultados de los análisis.
@@ -670,19 +670,22 @@ def generar_visualizaciones(resultados):
         
         figuras["radar_dimensiones"] = fig_radar
     
-    # Visualización 5:
-    # Visualización 5: Matriz de correlación
+    # Visualización 5: Matriz de correlación (solo la mitad inferior)
     if "correlaciones" in resultados and "matriz_correlacion_corta" in resultados["correlaciones"]:
         corr_matrix = resultados["correlaciones"]["matriz_correlacion_corta"]
         
+        # Crear una nueva matriz que solo tenga la mitad inferior
+        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+        corr_matrix_lower = corr_matrix.mask(mask)
+        
         fig_corr = px.imshow(
-            corr_matrix,
+            corr_matrix_lower,
             text_auto=".2f",
             aspect="auto",
             color_continuous_scale="RdBu_r",
             zmin=-1,
             zmax=1,
-            title="Matriz de Correlación de Spearman"
+            title="Matriz de Correlación de Spearman (Mitad Inferior)"
         )
         
         fig_corr.update_layout(height=700, width=700)
@@ -705,75 +708,5 @@ def generar_visualizaciones(resultados):
         
         fig_clusters.update_layout(height=600, legend_title="Cluster")
         figuras["clusters_pca"] = fig_clusters
-    
-    # Visualización 7: Perfiles de clusters
-    if "clusters" in resultados and "perfiles_clusters" in resultados["clusters"]:
-        perfiles = resultados["clusters"]["perfiles_clusters"]
-        
-        # Preparar datos para gráfico
-        datos_perfiles = []
-        
-        for cluster_id, perfil in perfiles.items():
-            for dimension, valor in perfil["promedios_dimensiones"].items():
-                datos_perfiles.append({
-                    "Cluster": f"Cluster {cluster_id}",
-                    "Dimensión": dimension,
-                    "Puntuación": valor
-                })
-        
-        df_perfiles = pd.DataFrame(datos_perfiles)
-        
-        fig_perfiles = px.bar(
-            df_perfiles,
-            x="Dimensión",
-            y="Puntuación",
-            color="Cluster",
-            barmode="group",
-            title="Perfil de Clusters por Dimensión",
-            color_discrete_sequence=px.colors.qualitative.Bold
-        )
-        
-        fig_perfiles.update_layout(
-            xaxis_title="Dimensión",
-            yaxis_title="Puntuación Promedio (1-3)",
-            yaxis=dict(range=[0, 3.2])
-        )
-        
-        figuras["perfiles_clusters"] = fig_perfiles
-    
-    # Visualización 8: Comparación por comunas
-    if "comparativo" in resultados and "comparacion_comunas" in resultados["comparativo"]:
-        comp_comunas = resultados["comparativo"]["comparacion_comunas"]
-        
-        # Preparar datos para gráfico
-        datos_comp = []
-        
-        for comuna, valores in comp_comunas.iterrows():
-            for dimension, valor in valores.items():
-                datos_comp.append({
-                    "Comuna": f"Comuna {comuna}",
-                    "Dimensión": dimension,
-                    "Puntuación": valor
-                })
-        
-        df_comp = pd.DataFrame(datos_comp)
-        
-        fig_comp = px.bar(
-            df_comp,
-            x="Dimensión",
-            y="Puntuación",
-            color="Comuna",
-            barmode="group",
-            title="Comparación por Comuna",
-            color_discrete_sequence=px.colors.qualitative.Pastel
-        )
-        
-        fig_comp.update_layout(
-            xaxis_title="Dimensión",
-            yaxis_title="Puntuación Promedio (1-3)",
-            yaxis=dict(range=[0, 3.2])
-        )
-        
-        figuras["comparacion_comunas"] = fig_comp
     
     return figuras

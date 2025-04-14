@@ -24,7 +24,7 @@ def connect_to_gsheets():
                 
                 creds = Credentials.from_service_account_info(credentials_dict, scopes=scopes)
                 client = gspread.authorize(creds)
-                st.success("Conectado a Google Sheets usando secrets.toml")
+                
                 return client
             except Exception as e:
                 st.warning(f"Error usando secrets.toml: {e}")
@@ -39,7 +39,7 @@ def connect_to_gsheets():
                 
                 creds = Credentials.from_service_account_file(credentials_path, scopes=scopes)
                 client = gspread.authorize(creds)
-                st.success("Conectado a Google Sheets usando credentials.json")
+                
                 return client
             except Exception as e:
                 st.warning(f"Error con credentials.json: {e}")
