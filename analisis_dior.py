@@ -710,3 +710,322 @@ def generar_visualizaciones(resultados):
         figuras["clusters_pca"] = fig_clusters
     
     return figuras
+def analisis_liderazgo_por_rol(df_prep):
+    """
+    Realiza un análisis comparativo de percepción de liderazgo entre gestores principales y auxiliares.
+    
+    Args:
+        df_prep (DataFrame): DataFrame preparado con valores numéricos
+        
+    Returns:
+        dict: Diccionario con los resultados del análisis
+    """
+    resultados = {}
+    
+    # Verificar que existen las columnas necesarias
+    columnas_requeridas = [
+        "ROL", 
+        "NOMBRE_COMEDOR", 
+        "2.1_LIDERAZGO_RESPESTUOSO", 
+        "2.2_OPORTUNIDAD_DE_PROPONER_IDEAS", 
+        "2.3_ESPACIOS_ADECUADOS_RETROALIMENTACION"
+    ]
+    
+    if not all(col in df_prep.columns for col in columnas_requeridas):
+        missing_columns = [col for col in columnas_requeridas if col not in df_prep.columns]
+        return {"error": f"Faltan columnas requeridas: {', '.join(missing_columns)}"}
+    
+    # Filtrar solo las filas que tienen un rol definido
+    df_con_rol = df_prep[df_prep["ROL"].notna()]
+    
+    # Normalizar los valores de rol para manejar posibles variaciones en el texto
+    df_con_rol["ROL_NORMALIZADO"] = df_con_rol["ROL"].str.strip().str.upper()
+    
+    # Definir los roles a comparar
+    rol_principal = "GESTORA/OR PRINCIPAL"
+    rol_auxiliar = "GESTORA/OR AUXILIAR"
+    
+    # Identificar comedores que tienen ambos roles para comparar
+    comedores_principales = set(df_con_rol[df_con_rol["ROL_NORMALIZADO"].str.contains(rol_principal)]["NOMBRE_COMEDOR"])
+    comedores_auxiliares = set(df_con_rol[df_con_rol["ROL_NORMALIZADO"].str.contains(rol_auxiliar)]["NOMBRE_COMEDOR"])
+    comedores_ambos_roles = comedores_principales.intersection(comedores_auxiliares)
+    
+    resultados["total_comedores"] = len(set(df_con_rol["NOMBRE_COMEDOR"]))
+    resultados["comedores_con_principal"] = len(comedores_principales)
+    resultados["comedores_con_auxiliar"] = len(comedores_auxiliares)
+    resultados["comedores_con_ambos_roles"] = len(comedores_ambos_roles)
+    
+    # Análisis por pregunta de liderazgo
+    preguntas_liderazgo = [
+        "2.1_LIDERAZGO_RESPESTUOSO", 
+        "2.2_OPORTUNIDAD_DE_PROPONER_IDEAS", 
+        "2.3_ESPACIOS_ADECUADOS_RETROALIMENTACION"
+    ]
+    
+    # Análisis global (todos los comedores)
+    analisis_global = {}
+    for pregunta in preguntas_liderazgo:
+        # Obtener promedios por rol
+        promedio_principal = df_con_rol[df_con_rol["ROL_NORMALIZADO"].str.contains(rol_principal)][pregunta].mean()
+        promedio_auxiliar = df_con_rol[df_con_rol["ROL_NORMALIZADO"].str.contains(rol_auxiliar)][pregunta].mean()
+        
+        # Calcular diferencia
+        diferencia = promedio_principal - promedio_auxiliar
+        
+        analisis_global[pregunta] = {
+            "promedio_principal": promedio_principal,
+            "promedio_auxiliar": promedio_auxiliar,
+            "diferencia": diferencia,
+            "diferencia_abs": abs(diferencia)
+        }
+    
+    resultados["analisis_global"] = analisis_global
+    
+    # Análisis por comedor (solo para comedores que tienen ambos roles)
+    analisis_comedores = {}
+    
+    for comedor in comedores_ambos_roles:
+        # Filtrar datos de este comedor
+        df_comedor = df_con_rol[df_con_rol["NOMBRE_COMEDOR"] == comedor]
+        
+        # Datos de gestores principales de este comedor
+        df_principal = df_comedor[df_comedor["ROL_NORMALIZADO"].str.contains(rol_principal)]
+        
+        # Datos de gestores auxiliares de este comedor
+        df_auxiliar = df_comedor[df_comedor["ROL_NORMALIZADO"].str.contains(rol_auxiliar)]
+        
+        # Análisis por pregunta para este comedor
+        analisis_comedor = {}
+        
+        for pregunta in preguntas_liderazgo:
+            # Obtener valores para cada rol (puede haber múltiples gestores por rol)
+            valores_principal = df_principal[pregunta].tolist()
+            valores_auxiliar = df_auxiliar[pregunta].tolist()
+            
+            # Calcular promedios
+            promedio_principal = df_principal[pregunta].mean()
+            promedio_auxiliar = df_auxiliar[pregunta].mean()
+            
+            # Calcular diferencia
+            diferencia = promedio_principal - promedio_auxiliar
+            
+            # Calcular concordancia (qué tan similares son las respuestas)
+            concordancia = "Alta" if abs(diferencia) <= 0.5 else "Media" if abs(diferencia) <= 1 else "Baja"
+            
+            analisis_comedor[pregunta] = {
+                "valores_principal": valores_principal,
+                "valores_auxiliar": valores_auxiliar,
+                "promedio_principal": promedio_principal,
+                "promedio_auxiliar": promedio_auxiliar,
+                "diferencia": diferencia,
+                "diferencia_abs": abs(diferencia),
+                "concordancia": concordancia
+            }
+        
+        # Calcular indicadores globales para este comedor
+        diferencias = [analisis_comedor[pregunta]["diferencia_abs"] for pregunta in preguntas_liderazgo]
+        concordancia_global = "Alta" if all(d <= 0.5 for d in diferencias) else "Media" if all(d <= 1 for d in diferencias) else "Baja"
+        
+        analisis_comedores[comedor] = {
+            "analisis_preguntas": analisis_comedor,
+            "diferencia_promedio": sum(diferencias) / len(diferencias),
+            "concordancia_global": concordancia_global
+        }
+    
+    resultados["analisis_comedores"] = analisis_comedores
+    
+    # Crear resumen de concordancia
+    resumen_concordancia = {
+        "Alta": 0,
+        "Media": 0,
+        "Baja": 0
+    }
+    
+    for comedor, analisis in analisis_comedores.items():
+        concordancia = analisis["concordancia_global"]
+        resumen_concordancia[concordancia] += 1
+    
+    resultados["resumen_concordancia"] = resumen_concordancia
+    
+    return resultados
+# Función para generar visualizaciones para el análisis de liderazgo por rol
+def generar_visualizaciones_liderazgo_por_rol(resultados_liderazgo):
+    """
+    Genera visualizaciones para el análisis de liderazgo por rol.
+    
+    Args:
+        resultados_liderazgo (dict): Resultados del análisis de liderazgo por rol
+        
+    Returns:
+        dict: Diccionario con figuras de Plotly
+    """
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import pandas as pd
+    
+    figuras = {}
+    
+    if "error" in resultados_liderazgo:
+        return {"error": resultados_liderazgo["error"]}
+    
+    # 1. Comparación global de promedios por pregunta y rol
+    if "analisis_global" in resultados_liderazgo:
+        analisis_global = resultados_liderazgo["analisis_global"]
+        
+        # Preparar datos para el gráfico
+        preguntas = []
+        promedios_principal = []
+        promedios_auxiliar = []
+        diferencias = []
+        
+        # Mapeo para etiquetas más legibles
+        mapeo_etiquetas = {
+            "2.1_LIDERAZGO_RESPESTUOSO": "Liderazgo\nRespetuoso",
+            "2.2_OPORTUNIDAD_DE_PROPONER_IDEAS": "Oportunidad de\nProponer Ideas",
+            "2.3_ESPACIOS_ADECUADOS_RETROALIMENTACION": "Espacios para\nRetroalimentación"
+        }
+        
+        for pregunta, datos in analisis_global.items():
+            preguntas.append(mapeo_etiquetas.get(pregunta, pregunta))
+            promedios_principal.append(datos["promedio_principal"])
+            promedios_auxiliar.append(datos["promedio_auxiliar"])
+            diferencias.append(datos["diferencia"])
+        
+        # Crear DataFrame para gráfico de barras agrupadas
+        df_barras = pd.DataFrame({
+            "Pregunta": preguntas * 2,
+            "Rol": ["Principal"] * len(preguntas) + ["Auxiliar"] * len(preguntas),
+            "Promedio": promedios_principal + promedios_auxiliar
+        })
+        
+        # Gráfico de barras agrupadas
+        fig_barras = px.bar(
+            df_barras,
+            x="Pregunta",
+            y="Promedio",
+            color="Rol",
+            barmode="group",
+            title="Comparación de Percepción de Liderazgo por Rol",
+            color_discrete_map={"Principal": "#1f77b4", "Auxiliar": "#ff7f0e"},
+            text_auto=".2f"
+        )
+        
+        fig_barras.update_layout(
+            xaxis_title="Pregunta de Liderazgo",
+            yaxis_title="Puntuación Promedio (1-3)",
+            yaxis=dict(range=[0, 3.2]),
+            legend_title="Rol"
+        )
+        
+        figuras["comparacion_global"] = fig_barras
+        
+        # Gráfico de diferencias
+        df_dif = pd.DataFrame({
+            "Pregunta": preguntas,
+            "Diferencia": diferencias
+        })
+        
+        fig_dif = px.bar(
+            df_dif,
+            x="Pregunta",
+            y="Diferencia",
+            title="Diferencia de Percepción entre Roles (Principal - Auxiliar)",
+            color="Diferencia",
+            color_continuous_scale="RdBu",
+            text_auto=".2f"
+        )
+        
+        fig_dif.update_layout(
+            xaxis_title="Pregunta de Liderazgo",
+            yaxis_title="Diferencia en Puntuación"
+        )
+        
+        figuras["diferencias_global"] = fig_dif
+    
+    # 2. Distribución de concordancia entre comedores
+    if "resumen_concordancia" in resultados_liderazgo:
+        resumen = resultados_liderazgo["resumen_concordancia"]
+        
+        df_concordancia = pd.DataFrame({
+            "Nivel de Concordancia": list(resumen.keys()),
+            "Cantidad de Comedores": list(resumen.values())
+        })
+        
+        # Ordenar por nivel de concordancia (Alta, Media, Baja)
+        orden_concordancia = ["Alta", "Media", "Baja"]
+        df_concordancia["Orden"] = df_concordancia["Nivel de Concordancia"].map({
+            nivel: i for i, nivel in enumerate(orden_concordancia)
+        })
+        df_concordancia = df_concordancia.sort_values("Orden")
+        
+        colores_concordancia = {
+            "Alta": "#2ca02c",   # Verde
+            "Media": "#ffbb78",  # Naranja
+            "Baja": "#d62728"    # Rojo
+        }
+        
+        fig_conc = px.pie(
+            df_concordancia,
+            names="Nivel de Concordancia",
+            values="Cantidad de Comedores",
+            title="Distribución de Concordancia entre Roles por Comedor",
+            color="Nivel de Concordancia",
+            color_discrete_map=colores_concordancia
+        )
+        
+        fig_conc.update_traces(textinfo="percent+label+value")
+        
+        figuras["distribucion_concordancia"] = fig_conc
+    
+    # 3. Detalle por comedor (si hay más de 5 comedores, mostrar solo top 5 con mayor diferencia)
+    if "analisis_comedores" in resultados_liderazgo:
+        analisis_comedores = resultados_liderazgo["analisis_comedores"]
+        
+        if analisis_comedores:
+            # Ordenar comedores por diferencia promedio (de mayor a menor)
+            comedores_ordenados = sorted(
+                analisis_comedores.items(),
+                key=lambda x: x[1]["diferencia_promedio"],
+                reverse=True
+            )
+            
+            # Limitar a 10 comedores para el gráfico
+            top_comedores = comedores_ordenados[:10]
+            
+            # Datos para el gráfico
+            nombres_comedores = []
+            diferencias_promedio = []
+            
+            for comedor, datos in top_comedores:
+                nombres_comedores.append(comedor)
+                diferencias_promedio.append(datos["diferencia_promedio"])
+            
+            df_top = pd.DataFrame({
+                "Comedor": nombres_comedores,
+                "Diferencia Promedio": diferencias_promedio
+            })
+            
+            # Truncar nombres muy largos
+            df_top["Comedor"] = df_top["Comedor"].apply(lambda x: x[:25] + "..." if len(x) > 25 else x)
+            
+            fig_top = px.bar(
+                df_top,
+                x="Diferencia Promedio",
+                y="Comedor",
+                orientation="h",
+                title="Top Comedores con Mayor Diferencia de Percepción entre Roles",
+                color="Diferencia Promedio",
+                color_continuous_scale="Reds",
+                text_auto=".2f"
+            )
+            
+            fig_top.update_layout(
+                xaxis_title="Diferencia Promedio en Puntuación",
+                yaxis_title="",
+                yaxis=dict(autorange="reversed")  # Para ordenar de mayor a menor
+            )
+            
+            figuras["top_comedores_diferencia"] = fig_top
+    
+    return figuras
+
