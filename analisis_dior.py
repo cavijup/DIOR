@@ -670,28 +670,7 @@ def generar_visualizaciones(resultados):
         
         figuras["radar_dimensiones"] = fig_radar
     
-    # Visualización 5: Matriz de correlación (solo la mitad inferior)
-    if "correlaciones" in resultados and "matriz_correlacion_corta" in resultados["correlaciones"]:
-        corr_matrix = resultados["correlaciones"]["matriz_correlacion_corta"]
-        
-        # Crear una nueva matriz que solo tenga la mitad inferior
-        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-        corr_matrix_lower = corr_matrix.mask(mask)
-        
-        fig_corr = px.imshow(
-            corr_matrix_lower,
-            text_auto=".2f",
-            aspect="auto",
-            color_continuous_scale="RdBu_r",
-            zmin=-1,
-            zmax=1,
-            title="Matriz de Correlación de Spearman (Mitad Inferior)"
-        )
-        
-        fig_corr.update_layout(height=700, width=700)
-        figuras["matriz_correlacion"] = fig_corr
-    
-    # Visualización 6: Clusters en PCA
+       # Visualización 6: Clusters en PCA
     if "clusters" in resultados and "pca_data" in resultados["clusters"]:
         pca_data = resultados["clusters"]["pca_data"]
         n_clusters = resultados["clusters"]["n_clusters"]
@@ -743,7 +722,7 @@ def analisis_liderazgo_por_rol(df_prep):
     
     # Definir los roles a comparar
     rol_principal = "GESTORA/OR PRINCIPAL"
-    rol_auxiliar = "GESTORA/OR AUXILIAR"
+    rol_auxiliar = "GESTORA/OR  AUXILIAR"
     
     # Identificar comedores que tienen ambos roles para comparar
     comedores_principales = set(df_con_rol[df_con_rol["ROL_NORMALIZADO"].str.contains(rol_principal)]["NOMBRE_COMEDOR"])
@@ -859,9 +838,6 @@ def generar_visualizaciones_liderazgo_por_rol(resultados_liderazgo):
     Returns:
         dict: Diccionario con figuras de Plotly
     """
-    import plotly.express as px
-    import plotly.graph_objects as go
-    import pandas as pd
     
     figuras = {}
     
@@ -1028,4 +1004,5 @@ def generar_visualizaciones_liderazgo_por_rol(resultados_liderazgo):
             figuras["top_comedores_diferencia"] = fig_top
     
     return figuras
+
 
