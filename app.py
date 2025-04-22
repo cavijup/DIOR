@@ -10,7 +10,6 @@ from pages.vista_general import mostrar_vista_general
 from pages.dimensiones import mostrar_dimensiones
 from pages.liderazgo import mostrar_liderazgo
 from pages.clusters import mostrar_clusters
-from pages.comparativos import mostrar_comparativos
 from pages.desempeno_usuarios import mostrar_desempeno_usuarios
 
 # Importar las funciones de análisis
