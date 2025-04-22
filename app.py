@@ -204,8 +204,7 @@ def main():
                 mostrar_liderazgo(resultados, df)
             elif tipo_analisis == "Clusters":
                 mostrar_clusters(resultados, figuras, n_clusters)
-            elif tipo_analisis == "Comparativos":
-                mostrar_comparativos(resultados, figuras)
+            
             elif tipo_analisis == "Desempeño Usuarios":
                 mostrar_desempeno_usuarios(df)
                 
