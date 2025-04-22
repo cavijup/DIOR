@@ -36,7 +36,7 @@ def mostrar_liderazgo(resultados, df):
         st.error(resultados_liderazgo["error"])
     else:
         mostrar_metricas_liderazgo(resultados_liderazgo)
-        mostrar_visualizaciones_liderazgo(figuras_liderazgo)
+        mostrar_visualizaciones_liderazgo(resultados_liderazgo, figuras_liderazgo)
         mostrar_detalle_por_comedor(resultados_liderazgo)
 
 def mostrar_metricas_liderazgo(resultados_liderazgo):
@@ -76,20 +76,21 @@ def mostrar_metricas_liderazgo(resultados_liderazgo):
             delta=f"{resultados_liderazgo['comedores_con_ambos_roles'] / resultados_liderazgo['total_comedores'] * 100:.1f}%"
         )
 
-def mostrar_visualizaciones_liderazgo(figuras_liderazgo):
+def mostrar_visualizaciones_liderazgo(resultados_liderazgo, figuras_liderazgo):
     """
     Muestra las visualizaciones del análisis de liderazgo.
     
     Args:
+        resultados_liderazgo: Diccionario con los resultados del análisis
         figuras_liderazgo: Diccionario con las figuras del análisis de liderazgo
     """
-    # Mostrar visualizaciones
+    # Mostrar visualizaciones - solo la comparación global
     st.subheader("Comparación Global de Percepción por Rol")
     
     if "comparacion_global" in figuras_liderazgo:
         st.plotly_chart(figuras_liderazgo["comparacion_global"], use_container_width=True)
     
-    # Se ha eliminado la visualización de diferencias entre roles
+    # La gráfica de "diferencias_global" ha sido eliminada
     
     # Mostrar distribución de concordancia
     st.subheader("Concordancia entre Roles")
@@ -101,8 +102,8 @@ def mostrar_visualizaciones_liderazgo(figuras_liderazgo):
             st.plotly_chart(figuras_liderazgo["distribucion_concordancia"], use_container_width=True)
     
     with col2:
-        # Explicación de los niveles de concordancia
-        mostrar_explicacion_concordancia(figuras_liderazgo)
+        # Explicación de los niveles de concordancia - ahora pasando resultados_liderazgo también
+        mostrar_explicacion_concordancia(resultados_liderazgo)
     
     # Mostrar comedores con mayor diferencia
     st.subheader("Comedores con Mayor Diferencia de Percepción")
@@ -110,16 +111,16 @@ def mostrar_visualizaciones_liderazgo(figuras_liderazgo):
     if "top_comedores_diferencia" in figuras_liderazgo:
         st.plotly_chart(figuras_liderazgo["top_comedores_diferencia"], use_container_width=True)
 
-def mostrar_explicacion_concordancia(figuras_liderazgo):
+def mostrar_explicacion_concordancia(resultados_liderazgo):
     """
     Muestra la explicación de los niveles de concordancia.
     
     Args:
-        figuras_liderazgo: Diccionario con las figuras del análisis de liderazgo
+        resultados_liderazgo: Diccionario con los resultados del análisis de liderazgo
     """
-    # Extraer y mostrar información de concordancia
-    if "resumen_concordancia" in figuras_liderazgo:
-        resumen_concordancia = figuras_liderazgo["resumen_concordancia"]
+    # Extraer y mostrar información de concordancia - corregido para usar resultados_liderazgo
+    if "resumen_concordancia" in resultados_liderazgo:
+        resumen_concordancia = resultados_liderazgo["resumen_concordancia"]
         comedores_con_ambos_roles = sum(resumen_concordancia.values())
         
         st.markdown(f"""
