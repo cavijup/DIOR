@@ -25,66 +25,118 @@ st.set_page_config(
 
 # Estilos CSS personalizados
 st.markdown("""
-<style>
+    <style>
     .main-header {
         font-size: 2rem;
         font-weight: bold;
         color: #1E3A8A;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        background-color: #4ade80;  /* Color verde */
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
+
     .section-header {
         font-size: 1.5rem;
         font-weight: bold;
         color: #2563EB;
         margin-top: 2rem;
         margin-bottom: 1rem;
+        background-color: #f0f9ff;
+        padding: 0.8rem;
+        border-left: 5px solid #2563EB;
+        border-radius: 0 8px 8px 0;
     }
+
     .metric-container {
         background-color: #F3F4F6;
         border-radius: 10px;
         padding: 1rem;
         text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
     }
+
+    .metric-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
     .metric-value {
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: bold;
         color: #1E3A8A;
     }
+
     .metric-label {
         font-size: 1rem;
         color: #4B5563;
+        margin-top: 0.5rem;
     }
+
     .analysis-container {
-        background-color: #EFF6FF;
+        background-color: #f0f9ff;  /* Color de fondo más claro */
         border-radius: 10px;
-        padding: 1.5rem;
+        padding: 1.8rem;  /* Padding incrementado */
         height: 100%;
-    }
-    .analysis-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #1E3A8A;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);  /* Sombra más pronunciada */
+        border-left: 5px solid #3b82f6;  /* Borde izquierdo para destacar */
         margin-bottom: 1rem;
     }
+
+    .analysis-title {
+        font-size: 1.3rem;  /* Tamaño de fuente incrementado */
+        font-weight: bold;
+        color: #1E3A8A;
+        margin-bottom: 1.2rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #dbeafe;  /* Línea divisoria para el título */
+    }
+
     .analysis-text {
-        font-size: 1rem;
+        font-size: 1.05rem;  /* Tamaño de fuente incrementado */
         color: #374151;
-        line-height: 1.5;
+        line-height: 1.6;  /* Mayor espaciado entre líneas para mejor legibilidad */
     }
-    .dataframe {
-        width: 100%;
+
+    .analysis-text p {
+        margin-bottom: 0.8rem;  /* Espacio entre párrafos */
     }
+
+    .analysis-text b {
+        color: #1E3A8A;  /* Destacar texto en negrita */
+        font-weight: 600;
+    }
+
     .table-container {
         background-color: #F8FAFC;
         border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 1.2rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
+
     .table-title {
         font-size: 1.2rem;
         font-weight: 600;
         color: #1E3A8A;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.8rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* Estilo para destacar elementos importantes en el análisis */
+    .highlight-stat {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #1d4ed8;
+        background-color: #dbeafe;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        display: inline-block;
+        margin: 0 0.2rem;
     }
 </style>
 """, unsafe_allow_html=True)
