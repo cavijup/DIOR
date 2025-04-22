@@ -18,16 +18,9 @@ def mostrar_dimensiones(resultados, figuras):
     # Puntuación promedio por dimensión
     st.subheader("Puntuación Promedio por Dimensión")
     
-    # Mostrar gráfico de barras y radar para las dimensiones
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if "promedios_dimensiones" in figuras:
-            st.plotly_chart(figuras["promedios_dimensiones"], use_container_width=True)
-    
-    with col2:
-        if "radar_dimensiones" in figuras:
-            st.plotly_chart(figuras["radar_dimensiones"], use_container_width=True)
+    # Mostrar solo el gráfico de barras para las dimensiones (quitando el radar chart)
+    if "promedios_dimensiones" in figuras:
+        st.plotly_chart(figuras["promedios_dimensiones"], use_container_width=True)
     
     # Análisis detallado por dimensión
     st.subheader("Análisis Detallado por Dimensión")

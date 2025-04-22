@@ -159,10 +159,10 @@ def main():
         # Barra lateral con opciones
         st.sidebar.markdown('## Configuración')
         
-        # Opciones de análisis
+        # Opciones de análisis (removida la opción "Comparativos")
         tipo_analisis = st.sidebar.radio(
             "Seleccione tipo de análisis:",
-            ["Vista General", "Dimensiones", "Liderazgo", "Clusters", "Comparativos","Desempeño Usuarios"]
+            ["Vista General", "Dimensiones", "Liderazgo", "Clusters", "Desempeño Usuarios"]
         )
         
         # Número de clusters para el análisis
@@ -204,7 +204,6 @@ def main():
                 mostrar_liderazgo(resultados, df)
             elif tipo_analisis == "Clusters":
                 mostrar_clusters(resultados, figuras, n_clusters)
-            
             elif tipo_analisis == "Desempeño Usuarios":
                 mostrar_desempeno_usuarios(df)
                 

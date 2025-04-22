@@ -89,8 +89,7 @@ def mostrar_visualizaciones_liderazgo(figuras_liderazgo):
     if "comparacion_global" in figuras_liderazgo:
         st.plotly_chart(figuras_liderazgo["comparacion_global"], use_container_width=True)
     
-    if "diferencias_global" in figuras_liderazgo:
-        st.plotly_chart(figuras_liderazgo["diferencias_global"], use_container_width=True)
+    # Se ha eliminado la visualización de diferencias entre roles
     
     # Mostrar distribución de concordancia
     st.subheader("Concordancia entre Roles")
@@ -254,5 +253,3 @@ def crear_radar_comedor(detalles, comedor_seleccionado):
     )
     
     st.plotly_chart(fig_radar, use_container_width=True)
-    
-    
