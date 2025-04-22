@@ -83,13 +83,13 @@ def mostrar_visualizaciones_liderazgo(figuras_liderazgo):
     Args:
         figuras_liderazgo: Diccionario con las figuras del análisis de liderazgo
     """
-    # Mostrar visualizaciones
+    # Mostrar visualizaciones - solo la comparación global
     st.subheader("Comparación Global de Percepción por Rol")
     
     if "comparacion_global" in figuras_liderazgo:
         st.plotly_chart(figuras_liderazgo["comparacion_global"], use_container_width=True)
     
-    # Se ha eliminado la visualización de diferencias entre roles
+    # La gráfica de "diferencias_global" ha sido eliminada
     
     # Mostrar distribución de concordancia
     st.subheader("Concordancia entre Roles")
