@@ -182,3 +182,13 @@ def mostrar_eficiencia_por_dia(resultados_usuarios, figuras_usuarios):
             st.warning(f"No se pudo realizar el análisis por fecha: {resultados_usuarios['error_fecha']}")
         else:
             st.warning("No hay datos suficientes para analizar la eficiencia por día de visita.")
+# Código existente...
+
+# Agregar al final del archivo:
+if __name__ == "__main__":
+    if "df" in st.session_state:
+        df = st.session_state["df"]
+        
+        mostrar_desempeno_usuarios(df)
+    else:
+        st.error("No hay datos disponibles. Por favor, carga los datos desde la página principal.")

@@ -166,3 +166,15 @@ def mostrar_detalle_cluster(cluster_id, perfil):
             - Desarrollar planes específicos para las dimensiones con puntuación más baja
             - Realizar seguimiento periódico para verificar mejoras
             """)
+# Código existente...
+
+# Agregar al final del archivo:
+if __name__ == "__main__":
+    if "resultados_actuales" in st.session_state and "figuras_actuales" in st.session_state:
+        resultados = st.session_state["resultados_actuales"]
+        figuras = st.session_state["figuras_actuales"]
+        n_clusters = st.session_state.get("n_clusters", 3)
+        
+        mostrar_clusters(resultados, figuras, n_clusters)
+    else:
+        st.error("No hay datos disponibles. Por favor, carga los datos desde la página principal.")
