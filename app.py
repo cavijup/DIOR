@@ -20,6 +20,9 @@ from google_connection import load_data
 # Importar las funciones de análisis
 from analisis_dior import ejecutar_analisis_completo, generar_visualizaciones
 
+# Importar la función mostrar_vista_general desde vista_general.py
+from pages.vista_general import mostrar_vista_general
+
 # Configuración de la página
 st.set_page_config(
     page_title="Análisis DIOR",
@@ -221,55 +224,6 @@ def main():
         st.error(f"Ha ocurrido un error en la aplicación: {str(e)}")
         st.code(traceback.format_exc())
         st.info("Recomendación: Verifique la conexión con Google Sheets y la estructura de los datos.")
-
-# Esta función se ha importado desde pages/vista_general.py
-# Proporcionamos una versión simplificada para que el archivo principal sea independiente
-def mostrar_vista_general(resultados, figuras, show_details):
-    """
-    Muestra la página de vista general con métricas y distribuciones principales.
-    
-    Esta es una versión simplificada para la página principal. La versión completa
-    está en el archivo pages/vista_general.py
-    
-    Args:
-        resultados: Diccionario con los resultados del análisis
-        figuras: Diccionario con las figuras generadas
-        show_details: Booleano que indica si se deben mostrar detalles adicionales
-    """
-    st.markdown('<div class="section-header">Vista General del Clima Organizacional</div>', unsafe_allow_html=True)
-    
-    # Métricas principales
-    if "descriptivo" in resultados and "total_comedores" in resultados["descriptivo"]:
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric("Comedores Analizados", resultados["descriptivo"]["total_comedores"])
-        
-        if "distribucion_comunas" in resultados["descriptivo"]:
-            with col2:
-                st.metric("Comunas", len(resultados["descriptivo"]["distribucion_comunas"]))
-        
-        if "distribucion_nodos" in resultados["descriptivo"]:
-            with col3:
-                st.metric("Nodos", len(resultados["descriptivo"]["distribucion_nodos"]))
-        
-        if "distribucion_nichos" in resultados["descriptivo"]:
-            with col4:
-                st.metric("Nichos", len(resultados["descriptivo"]["distribucion_nichos"]))
-    
-    # Mostrar gráficos principales
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if "distribucion_respuestas" in figuras:
-            st.plotly_chart(figuras["distribucion_respuestas"], use_container_width=True)
-    
-    with col2:
-        if "promedios_dimensiones" in figuras:
-            st.plotly_chart(figuras["promedios_dimensiones"], use_container_width=True)
-    
-    # Mostrar instrucciones para navegar a más análisis
-    st.info("👈 Utilice el menú de navegación en la barra lateral para explorar análisis más detallados")
 
 if __name__ == "__main__":
     main()

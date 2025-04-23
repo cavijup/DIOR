@@ -2,175 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-def mostrar_vista_general(resultados, figuras, show_details):
-    """
-    Muestra la página de vista general con métricas y distribuciones principales.
-    
-    Args:
-        resultados: Diccionario con los resultados del análisis
-        figuras: Diccionario con las figuras generadas
-        show_details: Booleano que indica si se deben mostrar detalles adicionales
-    """
-    st.markdown('<div class="section-header">Comedores comunitarios</div>', unsafe_allow_html=True)
-    
-    # Métricas principales
-    col1, col2, col3, col4 = st.columns(4)
-    
-    # Cantidad de comedores
-    with col1:
-        if "descriptivo" in resultados and "total_comedores" in resultados["descriptivo"]:
-            st.markdown(f"""
-            <div class="metric-container">
-                <div class="metric-value">{resultados["descriptivo"]["total_comedores"]}</div>
-                <div class="metric-label">Comedores Analizados</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Cantidad de comunas
-    with col2:
-        if "descriptivo" in resultados and "distribucion_comunas" in resultados["descriptivo"]:
-            num_comunas = len(resultados["descriptivo"]["distribucion_comunas"])
-            st.markdown(f"""
-            <div class="metric-container">
-                <div class="metric-value">{num_comunas}</div>
-                <div class="metric-label">Comunas</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Cantidad de nodos
-    with col3:
-        if "descriptivo" in resultados and "distribucion_nodos" in resultados["descriptivo"]:
-            num_nodos = len(resultados["descriptivo"]["distribucion_nodos"])
-            st.markdown(f"""
-            <div class="metric-container">
-                <div class="metric-value">{num_nodos}</div>
-                <div class="metric-label">Nodos</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Cantidad de nichos
-    with col4:
-        if "descriptivo" in resultados and "distribucion_nichos" in resultados["descriptivo"]:
-            num_nichos = len(resultados["descriptivo"]["distribucion_nichos"])
-            st.markdown(f"""
-            <div class="metric-container">
-                <div class="metric-value">{num_nichos}</div>
-                <div class="metric-label">Nichos</div>
-            </div>
-            """, unsafe_allow_html=True)                           
-    
-    # Distribución general de respuestas
-    st.subheader("Distribución General de Respuestas")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Crear gráfico de barras horizontales para las respuestas
-        if "descriptivo" in resultados and "distribucion_respuestas" in resultados["descriptivo"]:
-            dist = resultados["descriptivo"]["distribucion_respuestas"]
-            
-            # Crear gráfico de barras horizontales
-            fig_barras = go.Figure()
-            
-            # Ordenar por valor de respuesta (1, 2, 3)
-            orden_respuestas = {
-                "EN DESACUERDO": 1,
-                "NI DEACUERDO, NI EN DESACUERDO": 2,
-                "DE ACUERDO": 3
-            }
-            
-            dist_ordenada = dist.copy()
-            dist_ordenada["Orden"] = dist_ordenada["Respuesta"].map(orden_respuestas)
-            dist_ordenada = dist_ordenada.sort_values("Orden")
-            
-            colores = {
-                "EN DESACUERDO": "#d62728",
-                "NI DEACUERDO, NI EN DESACUERDO": "#ffbb78",
-                "DE ACUERDO": "#2ca02c"
-            }
-            
-            # Añadir barras para cada tipo de respuesta
-            for idx, row in dist_ordenada.iterrows():
-                fig_barras.add_trace(go.Bar(
-                    y=[row["Respuesta"]],
-                    x=[row["Cantidad"]],
-                    orientation='h',
-                    name=row["Respuesta"],
-                    marker_color=colores.get(row["Respuesta"], "#1f77b4"),
-                    text=f"{row['Porcentaje']}%",
-                    textposition='auto'
-                ))
-            
-            fig_barras.update_layout(
-                title="Distribución de Respuestas",
-                xaxis_title="Cantidad de Respuestas",
-                yaxis_title="",
-                showlegend=False,
-                height=300,
-                margin=dict(l=20, r=20, t=40, b=20)  # Margen reducido
-            )
-            
-            st.plotly_chart(fig_barras, use_container_width=True)
-    
-    with col2:
-        # Análisis de texto sobre las respuestas - MEJORADO
-        if "descriptivo" in resultados and "distribucion_respuestas" in resultados["descriptivo"]:
-            dist = resultados["descriptivo"]["distribucion_respuestas"]
-            
-            # Encontrar la respuesta más común
-            respuesta_max = dist.loc[dist["Cantidad"].idxmax()]
-            
-            # Calcular total de respuestas
-            total_respuestas = dist["Cantidad"].sum()
-            
-            st.markdown(f"""
-            <div class="analysis-container">
-                <div class="analysis-title">Análisis de Respuestas</div>
-                <div class="analysis-text">
-                    <p>De un total de <span class="highlight-stat">{total_respuestas}</span> respuestas analizadas, la opción "<b>{respuesta_max['Respuesta']}</b>" 
-                    fue la más seleccionada con <span class="highlight-stat">{respuesta_max['Cantidad']}</span> respuestas, 
-                    representando el <span class="highlight-stat">{respuesta_max['Porcentaje']}%</span> del total.</p>
-                    
-            """, unsafe_allow_html=True)
-            
-            for idx, row in dist.iterrows():
-                st.markdown(f"""
-                    <li><b>{row['Respuesta']}</b>: {row['Cantidad']} respuestas (<b>{row['Porcentaje']}%</b>)</li>
-                """, unsafe_allow_html=True)
-            
-            # Determinar interpretación general
-            de_acuerdo = dist[dist["Respuesta"] == "DE ACUERDO"]["Porcentaje"].values[0] if "DE ACUERDO" in dist["Respuesta"].values else 0
-            desacuerdo = dist[dist["Respuesta"] == "EN DESACUERDO"]["Porcentaje"].values[0] if "EN DESACUERDO" in dist["Respuesta"].values else 0
-            
-            interpretacion = ""
-            color_interpretacion = ""
-            if de_acuerdo > 60:
-                interpretacion = "muy favorable, con una fuerte tendencia positiva"
-                color_interpretacion = "#15803d"  # Verde oscuro
-            elif de_acuerdo > 40:
-                interpretacion = "generalmente favorable, con una tendencia positiva"
-                color_interpretacion = "#65a30d"  # Verde claro
-            elif desacuerdo > 60:
-                interpretacion = "desfavorable, con una tendencia negativa predominante"
-                color_interpretacion = "#b91c1c"  # Rojo oscuro
-            elif desacuerdo > 40:
-                interpretacion = "parcialmente desfavorable, con una tendencia negativa"
-                color_interpretacion = "#dc2626"  # Rojo
-            else:
-                interpretacion = "mixto, con opiniones divididas"
-                color_interpretacion = "#d97706"  # Amarillo/naranja
-            
-            st.markdown(f"""
-                    </ul>
-                    <p>Esto indica un clima organizacional <b style="color:{color_interpretacion}; font-size:1.1rem;">{interpretacion}</b> en los comedores comunitarios analizados.</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Distribución demográfica
-    if show_details:
-        mostrar_distribucion_demografica(resultados)
-
 def generar_analisis_descriptivo_comuna(comunas_df):
     """
     Genera un análisis descriptivo textual de la distribución por comuna.
@@ -369,9 +200,6 @@ def generar_analisis_descriptivo_nodo(nodos_df):
     
     return analisis
 
-# Ahora necesitas reemplazar la función mostrar_distribucion_demografica en vista_general.py
-# con una versión que utilice estas nuevas funciones:
-
 def mostrar_distribucion_demografica(resultados):
     """
     Muestra los detalles de distribución demográfica (comunas, nodos, etc.)
@@ -449,3 +277,158 @@ def mostrar_distribucion_demografica(resultados):
             nodos_df = resultados["descriptivo"]["distribucion_nodos"]
             analisis_nodos = generar_analisis_descriptivo_nodo(nodos_df)
             st.markdown(analisis_nodos, unsafe_allow_html=True)
+
+def mostrar_vista_general(resultados, figuras, show_details):
+    """
+    Muestra la página de vista general con métricas y distribuciones principales.
+    
+    Args:
+        resultados: Diccionario con los resultados del análisis
+        figuras: Diccionario con las figuras generadas
+        show_details: Booleano que indica si se deben mostrar detalles adicionales
+    """
+    st.markdown('<div class="section-header">Vista General del Clima Organizacional</div>', unsafe_allow_html=True)
+    
+    # Métricas principales
+    if "descriptivo" in resultados and "total_comedores" in resultados["descriptivo"]:
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Comedores Analizados", resultados["descriptivo"]["total_comedores"])
+        
+        if "distribucion_comunas" in resultados["descriptivo"]:
+            with col2:
+                st.metric("Comunas", len(resultados["descriptivo"]["distribucion_comunas"]))
+        
+        if "distribucion_nodos" in resultados["descriptivo"]:
+            with col3:
+                st.metric("Nodos", len(resultados["descriptivo"]["distribucion_nodos"]))
+        
+        if "distribucion_nichos" in resultados["descriptivo"]:
+            with col4:
+                st.metric("Nichos", len(resultados["descriptivo"]["distribucion_nichos"]))
+    
+    # Distribución general de respuestas
+    st.subheader("Distribución General de Respuestas")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Crear gráfico de barras horizontales para las respuestas
+        if "descriptivo" in resultados and "distribucion_respuestas" in resultados["descriptivo"]:
+            dist = resultados["descriptivo"]["distribucion_respuestas"]
+            
+            # Crear gráfico de barras horizontales
+            fig_barras = go.Figure()
+            
+            # Ordenar por valor de respuesta (1, 2, 3)
+            orden_respuestas = {
+                "EN DESACUERDO": 1,
+                "NI DEACUERDO, NI EN DESACUERDO": 2,
+                "DE ACUERDO": 3
+            }
+            
+            dist_ordenada = dist.copy()
+            dist_ordenada["Orden"] = dist_ordenada["Respuesta"].map(orden_respuestas)
+            dist_ordenada = dist_ordenada.sort_values("Orden")
+            
+            colores = {
+                "EN DESACUERDO": "#d62728",
+                "NI DEACUERDO, NI EN DESACUERDO": "#ffbb78",
+                "DE ACUERDO": "#2ca02c"
+            }
+            
+            # Añadir barras para cada tipo de respuesta
+            for idx, row in dist_ordenada.iterrows():
+                fig_barras.add_trace(go.Bar(
+                    y=[row["Respuesta"]],
+                    x=[row["Cantidad"]],
+                    orientation='h',
+                    name=row["Respuesta"],
+                    marker_color=colores.get(row["Respuesta"], "#1f77b4"),
+                    text=f"{row['Porcentaje']}%",
+                    textposition='auto'
+                ))
+            
+            fig_barras.update_layout(
+                title="Distribución de Respuestas",
+                xaxis_title="Cantidad de Respuestas",
+                yaxis_title="",
+                showlegend=False,
+                height=300,
+                margin=dict(l=20, r=20, t=40, b=20)  # Margen reducido
+            )
+            
+            st.plotly_chart(fig_barras, use_container_width=True)
+    
+    with col2:
+        # Análisis de texto sobre las respuestas - MEJORADO
+        if "descriptivo" in resultados and "distribucion_respuestas" in resultados["descriptivo"]:
+            dist = resultados["descriptivo"]["distribucion_respuestas"]
+            
+            # Encontrar la respuesta más común
+            respuesta_max = dist.loc[dist["Cantidad"].idxmax()]
+            
+            # Calcular total de respuestas
+            total_respuestas = dist["Cantidad"].sum()
+            
+            st.markdown(f"""
+            <div class="analysis-container">
+                <div class="analysis-title">Análisis de Respuestas</div>
+                <div class="analysis-text">
+                    <p>De un total de <span class="highlight-stat">{total_respuestas}</span> respuestas analizadas, la opción "<b>{respuesta_max['Respuesta']}</b>" 
+                    fue la más seleccionada con <span class="highlight-stat">{respuesta_max['Cantidad']}</span> respuestas, 
+                    representando el <span class="highlight-stat">{respuesta_max['Porcentaje']}%</span> del total.</p>
+                    
+            """, unsafe_allow_html=True)
+            
+            for idx, row in dist.iterrows():
+                st.markdown(f"""
+                    <li><b>{row['Respuesta']}</b>: {row['Cantidad']} respuestas (<b>{row['Porcentaje']}%</b>)</li>
+                """, unsafe_allow_html=True)
+            
+            # Determinar interpretación general
+            de_acuerdo = dist[dist["Respuesta"] == "DE ACUERDO"]["Porcentaje"].values[0] if "DE ACUERDO" in dist["Respuesta"].values else 0
+            desacuerdo = dist[dist["Respuesta"] == "EN DESACUERDO"]["Porcentaje"].values[0] if "EN DESACUERDO" in dist["Respuesta"].values else 0
+            
+            interpretacion = ""
+            color_interpretacion = ""
+            if de_acuerdo > 60:
+                interpretacion = "muy favorable, con una fuerte tendencia positiva"
+                color_interpretacion = "#15803d"  # Verde oscuro
+            elif de_acuerdo > 40:
+                interpretacion = "generalmente favorable, con una tendencia positiva"
+                color_interpretacion = "#65a30d"  # Verde claro
+            elif desacuerdo > 60:
+                interpretacion = "desfavorable, con una tendencia negativa predominante"
+                color_interpretacion = "#b91c1c"  # Rojo oscuro
+            elif desacuerdo > 40:
+                interpretacion = "parcialmente desfavorable, con una tendencia negativa"
+                color_interpretacion = "#dc2626"  # Rojo
+            else:
+                interpretacion = "mixto, con opiniones divididas"
+                color_interpretacion = "#d97706"  # Amarillo/naranja
+            
+            st.markdown(f"""
+                    </ul>
+                    <p>Esto indica un clima organizacional <b style="color:{color_interpretacion}; font-size:1.1rem;">{interpretacion}</b> en los comedores comunitarios analizados.</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Mostrar gráficos principales
+    st.subheader("Dimensiones del Clima Organizacional")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if "promedios_dimensiones" in figuras:
+            st.plotly_chart(figuras["promedios_dimensiones"], use_container_width=True)
+    
+    with col2:
+        if "radar_dimensiones" in figuras:
+            st.plotly_chart(figuras["radar_dimensiones"], use_container_width=True)
+    
+    # Distribución demográfica
+    if show_details:
+        mostrar_distribucion_demografica(resultados)
