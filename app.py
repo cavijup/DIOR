@@ -6,7 +6,7 @@ Gestiona la carga de datos, la configuración de la interfaz de usuario,
 la navegación entre las diferentes páginas de análisis y la generación de reportes.
 
 Autor: Equipo de DIOR Analytics
-Versión: 1.3 (Añadida descarga de resumen HTML)
+Versión: 1.4 (Añadido título principal y descarga HTML)
 """
 
 import streamlit as st
@@ -26,7 +26,12 @@ st.set_page_config(
 from google_connection import load_data
 
 # Importar las funciones de análisis
-from analisis_dior import ejecutar_analisis_completo, generar_visualizaciones, analisis_liderazgo_por_rol, interpretar_promedio
+# Asegúrate de que estas funciones existan y sean importables
+try:
+    from analisis_dior import ejecutar_analisis_completo, generar_visualizaciones, analisis_liderazgo_por_rol, interpretar_promedio
+except ImportError as e:
+    st.error(f"Error al importar funciones de análisis: {e}. Asegúrate de que 'analisis_dior.py' esté en el mismo directorio.")
+    st.stop() # Detener si las funciones de análisis no se pueden importar
 
 # Estilos CSS personalizados
 def cargar_estilos_css():
@@ -34,11 +39,49 @@ def cargar_estilos_css():
     st.markdown("""
     <style>
     /* Estilos existentes */
-    .main-header { font-size: 2rem; font-weight: bold; color: #1E3A8A; margin-bottom: 1.5rem; background-color: #4ade80; padding: 1rem; border-radius: 8px; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-    .sidebar-title { font-size: 1.5rem; font-weight: bold; color: #2563EB; margin-bottom: 1rem; text-align: center; }
-    .metric-card { background-color: #E0F2FE; border-radius: 8px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-bottom: 10px; height: 100px; display: flex; flex-direction: column; justify-content: center; border: 1px solid #BFDBFE; }
-    .metric-label { font-size: 0.9em; color: #4B5563; margin-bottom: 5px; font-weight: 500; }
-    .metric-value { font-size: 1.8em; font-weight: bold; color: #1E3A8A; line-height: 1.2; }
+    .main-header {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1E3A8A; /* Azul oscuro */
+        margin-bottom: 1.5rem;
+        background-color: #4ade80;  /* Color verde */
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .sidebar-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2563EB; /* Azul */
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .metric-card {
+        background-color: #E0F2FE; /* Azul claro */
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 10px;
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border: 1px solid #BFDBFE;
+    }
+    .metric-label {
+        font-size: 0.9em;
+        color: #4B5563;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    .metric-value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #1E3A8A;
+        line-height: 1.2;
+    }
     /* Estilo para el botón de descarga */
     .stDownloadButton>button {
         width: 100%;
@@ -52,6 +95,14 @@ def cargar_estilos_css():
         background-color: #1E3A8A; /* Azul aún más oscuro */
         color: white;
         border: 1px solid #1E3A8A;
+    }
+    /* Estilo para la descripción principal */
+    .main-description {
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background-color: #f8f9fa; /* Fondo gris muy claro */
+        border-left: 5px solid #2563EB; /* Borde izquierdo azul */
+        border-radius: 5px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -84,39 +135,40 @@ def generar_reporte_html(resultados, resultados_liderazgo):
         "    table { border-collapse: collapse; width: 90%; margin: 15px auto; }",
         "    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }",
         "    th { background-color: #E0F2FE; color: #1E3A8A; font-weight: bold; }",
-        "    .section { margin-bottom: 30px; padding-bottom: 20px; }",
+        "    .section { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px dashed #eee; }", # Separador entre secciones
         "    .metric-summary p, .summary-text p, .dimension-summary p, .liderazgo-summary p { margin: 8px 0; }",
         "    ul { padding-left: 20px; }",
         "    li { margin-bottom: 5px; }",
-        "    .warning { color: #D97706; font-weight: bold; } /* Naranja para advertencia */",
-        "    .success { color: #15803D; font-weight: bold; } /* Verde para éxito */",
+        "    .warning { color: #D97706; font-weight: bold; }",
+        "    .success { color: #15803D; font-weight: bold; }",
         "    .interpretation-favorable { color: #15803D; }",
         "    .interpretation-neutral { color: #D97706; }",
         "    .interpretation-desfavorable { color: #B91C1C; }",
-        "    .timestamp { font-size: 0.8em; color: #888; text-align: right; }",
+        "    .timestamp { font-size: 0.8em; color: #888; text-align: right; margin-top: 40px; }",
         "  </style>",
         "</head>",
         "<body>",
-        f"<h1>Resumen Análisis Clima Organizacional DIOR</h1>",
-        f"<p class='timestamp'>Generado el: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>"
+        f"<h1>Resumen Análisis Clima Organizacional DIOR</h1>"
+        # Timestamp se mueve al final
     ]
 
     # --- Sección 1: Vista General ---
     html_parts.append('<div class="section"><h2>Vista General</h2>')
-    if "descriptivo" in resultados:
+    if resultados and "descriptivo" in resultados:
         desc = resultados["descriptivo"]
         html_parts.append('<div class="metric-summary"><h3>Métricas Principales</h3>')
         html_parts.append(f"<p><b>Total Comedores Analizados:</b> {desc.get('total_comedores', 'N/A')}</p>")
-        total_comunas = len(desc.get("distribucion_comunas", pd.DataFrame())) if "distribucion_comunas" in desc else "N/A"
-        total_nodos = len(desc.get("distribucion_nodos", pd.DataFrame())) if "distribucion_nodos" in desc else "N/A"
-        total_nichos = len(desc.get("distribucion_nichos", pd.DataFrame())) if "distribucion_nichos" in desc else "N/A"
+        total_comunas = len(desc.get("distribucion_comunas", pd.DataFrame())) if isinstance(desc.get("distribucion_comunas"), pd.DataFrame) else "N/A"
+        total_nodos = len(desc.get("distribucion_nodos", pd.DataFrame())) if isinstance(desc.get("distribucion_nodos"), pd.DataFrame) else "N/A"
+        total_nichos = len(desc.get("distribucion_nichos", pd.DataFrame())) if isinstance(desc.get("distribucion_nichos"), pd.DataFrame) else "N/A"
         html_parts.append(f"<p><b>Total Comunas:</b> {total_comunas}</p>")
         html_parts.append(f"<p><b>Total Nodos:</b> {total_nodos}</p>")
         html_parts.append(f"<p><b>Total Nichos:</b> {total_nichos}</p>")
         html_parts.append('</div>')
 
-        if "distribucion_respuestas" in desc and not desc["distribucion_respuestas"].empty:
-            dist_resp = desc["distribucion_respuestas"]
+        dist_resp_data = desc.get("distribucion_respuestas")
+        if isinstance(dist_resp_data, pd.DataFrame) and not dist_resp_data.empty:
+            dist_resp = dist_resp_data
             respuesta_max = dist_resp.loc[dist_resp["Cantidad"].idxmax()]
             total_respuestas = dist_resp["Cantidad"].sum()
             de_acuerdo = dist_resp[dist_resp["Respuesta"] == "DE ACUERDO"]["Porcentaje"].iloc[0] if "DE ACUERDO" in dist_resp["Respuesta"].values else 0
@@ -134,19 +186,17 @@ def generar_reporte_html(resultados, resultados_liderazgo):
             html_parts.append('</div>')
         else:
              html_parts.append("<p>Distribución de respuestas no disponible.</p>")
-
     else:
         html_parts.append("<p>Datos descriptivos no disponibles.</p>")
     html_parts.append('</div>') # Fin sección Vista General
 
     # --- Sección 2: Análisis por Dimensiones ---
     html_parts.append('<div class="section"><h2>Análisis por Dimensiones</h2>')
-    if "dimensiones" in resultados and "promedios_dimensiones" in resultados["dimensiones"]:
-        prom_dim = resultados["dimensiones"]["promedios_dimensiones"]
-        if not prom_dim.empty:
+    if resultados and "dimensiones" in resultados and "promedios_dimensiones" in resultados["dimensiones"]:
+        prom_dim_data = resultados["dimensiones"]["promedios_dimensiones"]
+        if isinstance(prom_dim_data, pd.DataFrame) and not prom_dim_data.empty:
+            prom_dim = prom_dim_data
             html_parts.append('<h3>Puntuación Promedio por Dimensión</h3>')
-            # Crear tabla HTML del DataFrame de promedios
-            # Añadir clase CSS para interpretación de color
             def get_interpretation_class(interp):
                 if interp == "Favorable": return "interpretation-favorable"
                 if interp == "Neutral": return "interpretation-neutral"
@@ -154,12 +204,10 @@ def generar_reporte_html(resultados, resultados_liderazgo):
                 return ""
 
             prom_dim_html = prom_dim.copy()
-            prom_dim_html['Promedio'] = prom_dim_html['Promedio'].map('{:.2f}'.format) # Formatear promedio
+            prom_dim_html['Promedio'] = prom_dim_html['Promedio'].map('{:.2f}'.format)
             prom_dim_html['Interpretación'] = prom_dim_html.apply(lambda row: f'<span class="{get_interpretation_class(row["Interpretación"])}">{row["Interpretación"]}</span>', axis=1)
+            html_parts.append(prom_dim_html[['Dimensión', 'Promedio', 'Interpretación']].to_html(escape=False, index=False, classes='dataframe')) # Añadir clase
 
-            html_parts.append(prom_dim_html[['Dimensión', 'Promedio', 'Interpretación']].to_html(escape=False, index=False))
-
-            # Resumen fortalezas/debilidades
             mejor_dim = prom_dim.iloc[0]
             peor_dim = prom_dim.iloc[-1]
             html_parts.append('<div class="dimension-summary"><h3>Resumen Dimensiones</h3>')
@@ -187,14 +235,13 @@ def generar_reporte_html(resultados, resultados_liderazgo):
             html_parts.append(f"<li><b>Baja Concordancia:</b> {resumen_conc.get('Baja', 0)} comedores</li>")
             html_parts.append("</ul>")
 
-            # Listar comedores con baja concordancia
             comedores_baja_concordancia = [
                 comedor for comedor, datos in resultados_liderazgo.get("analisis_comedores", {}).items()
                 if datos.get("concordancia_global") == "Baja"
             ]
             if comedores_baja_concordancia:
                 html_parts.append("<p class='warning'>⚠️ Comedores con Baja Concordancia (Potencial Intervención):</p><ul>")
-                for comedor in sorted(comedores_baja_concordancia): # Ordenar alfabéticamente
+                for comedor in sorted(comedores_baja_concordancia):
                     html_parts.append(f"<li>{comedor}</li>")
                 html_parts.append("</ul>")
             else:
@@ -206,10 +253,11 @@ def generar_reporte_html(resultados, resultados_liderazgo):
         html_parts.append("<p>Análisis de liderazgo no disponible o con errores.</p>")
     html_parts.append('</div>') # Fin sección Liderazgo
 
+    # Añadir timestamp al final
+    html_parts.append(f"<p class='timestamp'>Generado el: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>")
     # Cerrar HTML
     html_parts.append("</body></html>")
 
-    # Unir todas las partes
     return "\n".join(html_parts)
 
 
@@ -217,14 +265,14 @@ def generar_reporte_html(resultados, resultados_liderazgo):
 def main():
     """Función principal que ejecuta la aplicación Streamlit."""
     cargar_estilos_css()
-    st.sidebar.markdown('<div class="sidebar-title">DIOR Analytics</div>', unsafe_allow_html=True)
 
+    # --- Barra Lateral ---
+    st.sidebar.markdown('<div class="sidebar-title">DIOR Analytics</div>', unsafe_allow_html=True)
     page = st.sidebar.radio(
         "Navegar",
         ["Vista General", "Análisis por Dimensiones", "Liderazgo", "Desempeño de Usuarios"],
         key="page_selection"
     )
-
     st.sidebar.markdown('## Configuración')
     n_clusters = st.sidebar.slider(
         "Número de clusters (Análisis Backend)", min_value=2, max_value=5, value=3,
@@ -234,14 +282,26 @@ def main():
         "Mostrar detalles avanzados", value=True,
         help="Activa esta opción para ver análisis más detallados"
     )
-    # st.session_state["n_clusters"] = n_clusters # Guardar si aún se usa
     st.session_state["show_details"] = show_details
+
+    # --- Área Principal ---
+
+    # Título principal y Descripción (AÑADIDO)
+    st.markdown('<div class="main-header">Análisis de Clima Organizacional en Comedores Comunitarios</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="main-description">
+    Análisis del clima organizacional en los comedores comunitarios,
+    basado en la percepción de las gestoras y gestores sobre el relacionamiento, trabajo en equipo,
+    liderazgos y sentido de pertenencia. Utilice la barra lateral para navegar entre las diferentes secciones del análisis y descargar un resumen.
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("---") # Separador
 
     # --- Variables para resultados ---
     df = None
     resultados = None
     figuras = None
-    resultados_liderazgo = None # Inicializar resultados de liderazgo
+    resultados_liderazgo = None
 
     try:
         # --- Carga de Datos ---
@@ -252,7 +312,6 @@ def main():
                     st.error("No se pudieron cargar datos. Verifique la conexión.")
                     st.stop()
                 else:
-                    # st.success(f"Datos cargados: {len(df)} registros.") # Mensaje opcional
                     st.session_state["df"] = df
         else:
             df = st.session_state["df"]
@@ -267,50 +326,44 @@ def main():
         else:
             resultados, figuras = st.session_state[cache_key]
 
-        # --- Pre-cálculo de Análisis de Liderazgo (para reporte y página) ---
-        # Se calcula aquí para tenerlo disponible para el botón de descarga
+        # --- Pre-cálculo de Análisis de Liderazgo ---
         if resultados and "datos_preparados" in resultados:
              try:
-                 # Intentar calcular si no está ya en la sesión o si los datos cambiaron (simplificado aquí)
-                 if "resultados_liderazgo_actuales" not in st.session_state or True: # Forzar recálculo o añadir lógica de caché
+                 if "resultados_liderazgo_actuales" not in st.session_state: # Calcular solo si no existe
                      resultados_liderazgo = analisis_liderazgo_por_rol(resultados["datos_preparados"])
                      st.session_state["resultados_liderazgo_actuales"] = resultados_liderazgo
                  else:
                      resultados_liderazgo = st.session_state["resultados_liderazgo_actuales"]
              except Exception as e_lider:
                  print(f"Advertencia: No se pudo pre-calcular análisis de liderazgo: {e_lider}")
-                 resultados_liderazgo = {"error": str(e_lider)} # Guardar error si falla
+                 resultados_liderazgo = {"error": str(e_lider)}
                  if "resultados_liderazgo_actuales" in st.session_state:
-                     del st.session_state["resultados_liderazgo_actuales"] # Limpiar caché si falla
+                     del st.session_state["resultados_liderazgo_actuales"]
         else:
-             resultados_liderazgo = {"error": "Datos preparados no disponibles para análisis de liderazgo."}
-
+             resultados_liderazgo = {"error": "Datos preparados no disponibles."}
 
         # Guardar referencias actuales para las páginas
         st.session_state["resultados_actuales"] = resultados
         st.session_state["figuras_actuales"] = figuras
-        # No guardar resultados_liderazgo aquí globalmente si se maneja en su página
 
         # --- Botón de Descarga en Sidebar ---
         st.sidebar.markdown('## Descargar Reporte')
-        if resultados: # Solo mostrar si hay resultados
-            # Generar el contenido HTML del reporte
+        # Verificar que ambos resultados necesarios estén disponibles y sin errores
+        if resultados and resultados_liderazgo and "error" not in resultados_liderazgo:
             reporte_html_content = generar_reporte_html(resultados, resultados_liderazgo)
-            # Crear nombre de archivo con fecha
             fecha_actual = datetime.now().strftime("%Y%m%d")
             nombre_archivo = f"resumen_analisis_dior_{fecha_actual}.html"
-
             st.sidebar.download_button(
-                label="Descargar Resumen",
+                label="Descargar Resumen (HTML)",
                 data=reporte_html_content,
                 file_name=nombre_archivo,
                 mime="text/html"
             )
         else:
-            st.sidebar.info("Los análisis deben completarse para generar el reporte.")
-
+            st.sidebar.info("Análisis necesarios incompletos para generar el reporte.")
 
         # --- Renderizar Página Seleccionada ---
+        # El contenido de la página se mostrará DEBAJO del título y descripción principal
         if page == "Vista General":
             from pages.vista_general import mostrar_vista_general
             mostrar_vista_general(resultados, figuras, show_details)
@@ -319,8 +372,7 @@ def main():
             mostrar_dimensiones(resultados, figuras)
         elif page == "Liderazgo":
             from pages.liderazgo import mostrar_liderazgo
-            # Pasar los resultados de liderazgo pre-calculados si están disponibles
-            mostrar_liderazgo(resultados, df) # La función interna ya recalcula si es necesario
+            mostrar_liderazgo(resultados, df)
         elif page == "Desempeño de Usuarios":
             from pages.desempeno_usuarios import mostrar_desempeno_usuarios
             mostrar_desempeno_usuarios(df)
