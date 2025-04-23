@@ -1,18 +1,21 @@
+"""
+Aplicación principal para el Análisis de Clima Organizacional en Comedores Comunitarios.
+
+Este script es el punto de entrada principal de la aplicación Streamlit.
+Gestiona la carga de datos, la configuración de la interfaz de usuario
+y la navegación entre las diferentes páginas de análisis.
+
+Autor: Equipo de DIOR Analytics
+Versión: 1.0
+"""
+
 import pandas as pd
 import streamlit as st
 import traceback
+import os
 
 # Importar la función para cargar datos
 from google_connection import load_data
-
-# Importar páginas
-from pages.vista_general import mostrar_vista_general
-from pages.dimensiones import mostrar_dimensiones
-from pages.liderazgo import mostrar_liderazgo
-from pages.clusters import mostrar_clusters
-from pages.desempeno_usuarios import mostrar_desempeno_usuarios
-
-
 
 # Importar las funciones de análisis
 from analisis_dior import ejecutar_analisis_completo, generar_visualizaciones
@@ -158,16 +161,10 @@ def main():
     """)
 
     try:
-        # Barra lateral con opciones
+        # Barra lateral con opciones de configuración
         st.sidebar.markdown('## Configuración')
         
-        # Opciones de análisis (removida la opción "Comparativos")
-        tipo_analisis = st.sidebar.radio(
-            "Seleccione tipo de análisis:",
-            ["Vista General", "Dimensiones", "Liderazgo", "Clusters", "Desempeño Usuarios"]
-        )
-        
-        # Número de clusters para el análisis
+        # Número de clusters para el análisis (configuración global)
         n_clusters = st.sidebar.slider(
             "Número de clusters",
             min_value=2,
@@ -176,43 +173,103 @@ def main():
             help="Selecciona el número de grupos para el análisis de clusters"
         )
         
-        # Mostrar detalles avanzados
+        # Mostrar detalles avanzados (configuración global)
         show_details = st.sidebar.checkbox(
             "Mostrar detalles avanzados",
             value=True,
             help="Activa esta opción para ver análisis más detallados"
         )
         
-        # Cargar los datos desde Google Sheets
-        with st.spinner("Cargando datos de Google Sheets..."):
-            df = load_data()
+        # Guardar en session_state para que estén disponibles en todas las páginas
+        st.session_state["n_clusters"] = n_clusters
+        st.session_state["show_details"] = show_details
         
-        if df is None or df.empty:
-            st.error("No se pudieron cargar datos. Verifique la conexión con Google Sheets.")
-        else:
-            st.success(f"Datos cargados correctamente. {len(df)} registros encontrados.")
+        # Cargar los datos desde Google Sheets (solo si no están ya cargados)
+        if "df" not in st.session_state:
+            with st.spinner("Cargando datos de Google Sheets..."):
+                df = load_data()
             
-            # Ejecutar análisis
+                if df is None or df.empty:
+                    st.error("No se pudieron cargar datos. Verifique la conexión con Google Sheets.")
+                    st.stop()
+                else:
+                    st.success(f"Datos cargados correctamente. {len(df)} registros encontrados.")
+                    st.session_state["df"] = df
+        else:
+            df = st.session_state["df"]
+            
+        # Ejecutar análisis inicial (solo si no se ha ejecutado antes o cambia n_clusters)
+        cache_key = f"resultados_{n_clusters}"
+        if cache_key not in st.session_state:
             with st.spinner("Analizando datos... Por favor espera."):
                 resultados = ejecutar_analisis_completo(df_datos=df, n_clusters=n_clusters)
                 figuras = generar_visualizaciones(resultados)
                 
-            # Mostrar la página seleccionada según la opción elegida
-            if tipo_analisis == "Vista General":
-                mostrar_vista_general(resultados, figuras, show_details)
-            elif tipo_analisis == "Dimensiones":
-                mostrar_dimensiones(resultados, figuras)
-            elif tipo_analisis == "Liderazgo":
-                mostrar_liderazgo(resultados, df)
-            elif tipo_analisis == "Clusters":
-                mostrar_clusters(resultados, figuras, n_clusters)
-            elif tipo_analisis == "Desempeño Usuarios":
-                mostrar_desempeno_usuarios(df)
+                # Guardar resultados en la sesión
+                st.session_state[cache_key] = (resultados, figuras)
+        else:
+            resultados, figuras = st.session_state[cache_key]
+            
+        # Guardar las referencias actuales para uso fácil en la página principal
+        st.session_state["resultados_actuales"] = resultados
+        st.session_state["figuras_actuales"] = figuras
+            
+        # En la página principal, mostrar la vista general por defecto
+        mostrar_vista_general(resultados, figuras, show_details)
                 
     except Exception as e:
         st.error(f"Ha ocurrido un error en la aplicación: {str(e)}")
         st.code(traceback.format_exc())
         st.info("Recomendación: Verifique la conexión con Google Sheets y la estructura de los datos.")
+
+# Esta función se ha importado desde pages/vista_general.py
+# Proporcionamos una versión simplificada para que el archivo principal sea independiente
+def mostrar_vista_general(resultados, figuras, show_details):
+    """
+    Muestra la página de vista general con métricas y distribuciones principales.
+    
+    Esta es una versión simplificada para la página principal. La versión completa
+    está en el archivo pages/vista_general.py
+    
+    Args:
+        resultados: Diccionario con los resultados del análisis
+        figuras: Diccionario con las figuras generadas
+        show_details: Booleano que indica si se deben mostrar detalles adicionales
+    """
+    st.markdown('<div class="section-header">Vista General del Clima Organizacional</div>', unsafe_allow_html=True)
+    
+    # Métricas principales
+    if "descriptivo" in resultados and "total_comedores" in resultados["descriptivo"]:
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Comedores Analizados", resultados["descriptivo"]["total_comedores"])
+        
+        if "distribucion_comunas" in resultados["descriptivo"]:
+            with col2:
+                st.metric("Comunas", len(resultados["descriptivo"]["distribucion_comunas"]))
+        
+        if "distribucion_nodos" in resultados["descriptivo"]:
+            with col3:
+                st.metric("Nodos", len(resultados["descriptivo"]["distribucion_nodos"]))
+        
+        if "distribucion_nichos" in resultados["descriptivo"]:
+            with col4:
+                st.metric("Nichos", len(resultados["descriptivo"]["distribucion_nichos"]))
+    
+    # Mostrar gráficos principales
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if "distribucion_respuestas" in figuras:
+            st.plotly_chart(figuras["distribucion_respuestas"], use_container_width=True)
+    
+    with col2:
+        if "promedios_dimensiones" in figuras:
+            st.plotly_chart(figuras["promedios_dimensiones"], use_container_width=True)
+    
+    # Mostrar instrucciones para navegar a más análisis
+    st.info("👈 Utilice el menú de navegación en la barra lateral para explorar análisis más detallados")
 
 if __name__ == "__main__":
     main()

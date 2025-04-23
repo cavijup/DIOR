@@ -454,8 +454,6 @@ def ejecutar_analisis_completo(df_datos, n_clusters=3):
     # 3.2 Análisis por dimensiones
     resultados["dimensiones"] = analisis_por_dimensiones(df_prep)
     
-    # 3.3 Análisis de correlaciones
-    resultados["correlaciones"] = analisis_correlaciones(df_prep)
     
     # 3.4 Análisis de conglomerados
     resultados["clusters"] = analisis_clusters(df_datos, df_prep, n_clusters)
