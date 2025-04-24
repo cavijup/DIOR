@@ -260,7 +260,7 @@ def mostrar_distribucion_demografica(resultados):
                     # Métricas clave
                     cols_metricas = st.columns(3)
                     with cols_metricas[0]:
-                        st.metric("Total Comedores", total_comedores)
+                        st.metric("Total Encuestas", total_comedores)
                     with cols_metricas[1]:
                         st.metric("Total Comunas", total_comunas)
 
